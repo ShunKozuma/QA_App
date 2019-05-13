@@ -1,6 +1,7 @@
 package kozuma.shun.techacademy.jp
 
 import android.content.Intent
+import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.support.design.widget.FloatingActionButton
 import android.support.design.widget.NavigationView
@@ -8,22 +9,16 @@ import android.support.design.widget.Snackbar
 import android.support.v4.view.GravityCompat
 import android.support.v4.widget.DrawerLayout
 import android.support.v7.app.ActionBarDrawerToggle
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar
 import android.util.Base64
 import android.view.Menu
 import android.view.MenuItem
-import android.view.View
 import android.widget.ListView
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
+import kotlinx.android.synthetic.main.activity_question_detail.*
 
-
-import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.android.synthetic.main.activity_main.view.*
-import kotlinx.android.synthetic.main.app_bar_main.view.*
-
-class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener  {
+class FavoriteList : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener  {
 
     private lateinit var mToolbar: Toolbar
     private var mGenre = 0
@@ -37,7 +32,17 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     private val mEventListener = object : ChildEventListener {
         override fun onChildAdded(dataSnapshot: DataSnapshot, s: String?) {
+
+            println(dataSnapshot.getValue())
+
+            val maps = dataSnapshot.value as Map<String,String>
+
+
+
             val map = dataSnapshot.value as Map<String, String>
+
+            println(map.values)
+
             val title = map["title"] ?: ""
             val body = map["body"] ?: ""
             val name = map["name"] ?: ""
@@ -68,6 +73,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             mQuestionArrayList.add(question)
             mAdapter.notifyDataSetChanged()
         }
+
+
 
         override fun onChildChanged(dataSnapshot: DataSnapshot, s: String?) {
             val map = dataSnapshot.value as Map<String, String>
@@ -105,13 +112,16 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         override fun onCancelled(p0: DatabaseError) {
 
         }
+
+
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         mToolbar = findViewById(R.id.toolbar)
-        setSupportActionBar(mToolbar)
+
+        //setSupportActionBar(mToolbar)
 
         val fab = findViewById<FloatingActionButton>(R.id.fab)
         fab.setOnClickListener { view ->
@@ -122,6 +132,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
             }
             // ログイン済みのユーザーを取得する
+
             val user = FirebaseAuth.getInstance().currentUser
 
             if (user == null) {
@@ -142,11 +153,13 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         drawer.addDrawerListener(toggle)
         toggle.syncState()
 
+
         val navigationView = findViewById<NavigationView>(R.id.nav_view)
         navigationView.setNavigationItemSelectedListener(this)
 
         // Firebase
         mDatabaseReference = FirebaseDatabase.getInstance().reference
+
 
         // ListViewの準備
         mListView = findViewById(R.id.listView)
@@ -181,7 +194,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         } else {
             navigationView.menu.findItem(R.id.nav_like).isVisible = true
-            //mToolbar.title = "お気に入り"
+            mToolbar.title = "お気に入り"
             //mGenre = 0
             //navigationView.menu.add("お気に入りです")
         }
@@ -214,6 +227,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         if (id == R.id.nav_hobby) {
             mToolbar.title = "趣味"
             mGenre = 1
+            val intent = Intent(applicationContext, MainActivity::class.java)
+            intent.putExtra("genre", mGenre)
+            startActivity(intent)
         } else if (id == R.id.nav_life) {
             mToolbar.title = "生活"
             mGenre = 2
@@ -241,7 +257,12 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         if (mGenreRef != null) {
             mGenreRef!!.removeEventListener(mEventListener)
         }
-        mGenreRef = mDatabaseReference.child(ContentsPATH).child(mGenre.toString())
+
+        val uid = FirebaseAuth.getInstance().currentUser!!.uid
+        println(mDatabaseReference.child(FavoritesPATH).child(uid).child(mGenre.toString()))
+
+        mGenreRef = mDatabaseReference.child(FavoritesPATH).child(uid).child(mGenre.toString())
+
         mGenreRef!!.addChildEventListener(mEventListener)
 
         return true

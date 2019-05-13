@@ -27,4 +27,23 @@
             android:layout_margin="16dp"
             android:src="@drawable/plus" />
 
+    <TextView
+            android:text="☆"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/textViewLike"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentLeft="true"
+            android:textSize="30sp"
+            android:layout_margin="30dp"
+            android:textAlignment="center" />
+
+    <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/title_view"
+    />
+
+
+
 </RelativeLayout>

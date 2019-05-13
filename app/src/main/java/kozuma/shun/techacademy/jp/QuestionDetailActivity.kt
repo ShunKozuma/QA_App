@@ -2,6 +2,7 @@ package kozuma.shun.techacademy.jp
 
 import android.content.Intent
 import android.os.Bundle
+import android.preference.PreferenceManager
 import android.support.design.widget.FloatingActionButton
 import android.support.v7.app.AppCompatActivity
 import android.view.View
@@ -9,20 +10,27 @@ import android.widget.ListView
 
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
-import com.google.firebase.database.ChildEventListener
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.DatabaseReference
-import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.*
 import kotlinx.android.synthetic.main.activity_question_detail.*
+import kotlinx.android.synthetic.main.activity_question_send.*
 
-import java.util.HashMap
+import com.google.firebase.database.DataSnapshot
+import kotlin.collections.HashMap
+
+
+
 
 class QuestionDetailActivity : AppCompatActivity() {
 
     private lateinit var mQuestion: Question
     private lateinit var mAdapter: QuestionDetailListAdapter
     private lateinit var mAnswerRef: DatabaseReference
+    private lateinit var mFavoriteRef: DatabaseReference
+
+    //お気に入り判断
+    private var likestar: Boolean = false
+    //お気に入りデータ
+    private lateinit var mDataBaseReference: DatabaseReference
 
     private val mEventListener = object : ChildEventListener {
         override fun onChildAdded(dataSnapshot: DataSnapshot, s: String?) {
@@ -63,40 +71,118 @@ class QuestionDetailActivity : AppCompatActivity() {
         }
     }
 
-        override fun onCreate(savedInstanceState: Bundle?) {
-            super.onCreate(savedInstanceState)
-            setContentView(R.layout.activity_question_detail)
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_question_detail)
 
-            // 渡ってきたQuestionのオブジェクトを保持する
-            val extras = intent.extras
-            mQuestion = extras.get("question") as Question
+        mDataBaseReference = FirebaseDatabase.getInstance().reference
 
-            title = mQuestion.title
 
-            // ListViewの準備
-            mAdapter = QuestionDetailListAdapter(this, mQuestion)
-            listView.adapter = mAdapter
-            mAdapter.notifyDataSetChanged()
+        //お気に入りのID取得
+        //val dataBaseReference = FirebaseDatabase.getInstance().reference
+        val database = FirebaseDatabase.getInstance().reference
 
-            fab.setOnClickListener {
-                // ログイン済みのユーザーを取得する
-                val user = FirebaseAuth.getInstance().currentUser
+        database.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                //var title = snapshot
+                var key = snapshot.child(FavoritesPATH).child(mQuestion.uid).child(mQuestion.genre.toString()).child("question_id").getValue().toString()
 
-                if (user == null) {
-                    // ログインしていなければログイン画面に遷移させる
-                    val intent = Intent(applicationContext, LoginActivity::class.java)
-                    startActivity(intent)
-                } else {
-                    // Questionを渡して回答作成画面を起動する
-                    val intent = Intent(applicationContext, AnswerSendActivity::class.java)
-                    intent.putExtra("question", mQuestion)
-                    startActivity(intent)
+                if(key.equals(mQuestion.questionUid)){
+                    textViewLike.text = "⭐"
+                }else{
+                    textViewLike.text = "☆"
                 }
+
+
             }
 
-            val dataBaseReference = FirebaseDatabase.getInstance().reference
-            mAnswerRef = dataBaseReference.child(ContentsPATH).child(mQuestion.genre.toString()).child(mQuestion.questionUid).child(AnswersPATH)
-            mAnswerRef.addChildEventListener(mEventListener)
+            override fun onCancelled(error: DatabaseError) {
+                //エラー処理
+            }
+        })
+
+
+        //お気に入りボタン
+        textViewLike.setOnClickListener{
+            if (likestar == false){
+                textViewLike.text = "⭐"
+                likestar = true
+                println("-----------"+likestar)
+
+                val favoriteRef = mDataBaseReference.child(FavoritesPATH).child(mQuestion.uid).child(mQuestion.genre.toString()).child("question_id").push().setValue(mQuestion.questionUid)
+
+                //val data = HashMap<String, String>()
+
+                //data["question_id"] = mQuestion.questionUid
+
+                //favoriteRef.setValue(data)
+
+                //favoriteRef.updateChildren(data as Map<String, Any>)
+
+            }else if(likestar == true){
+                textViewLike.text = "☆"
+                likestar = false
+                println("-----------"+likestar)
+
+                val favoriteRef = mDataBaseReference.child(FavoritesPATH).child(mQuestion.uid).child(mQuestion.genre.toString())
+
+                favoriteRef.removeValue()
+            }
+        }
+
+
+
+
+
+
+        // 渡ってきたQuestionのオブジェクトを保持する
+        val extras = intent.extras
+        mQuestion = extras.get("question") as Question
+
+        title = mQuestion.title
+
+        // ListViewの準備
+        mAdapter = QuestionDetailListAdapter(this, mQuestion)
+        listView.adapter = mAdapter
+        mAdapter.notifyDataSetChanged()
+
+        fab.setOnClickListener {
+            // ログイン済みのユーザーを取得する
+            val user = FirebaseAuth.getInstance().currentUser
+
+            if (user == null) {
+                // ログインしていなければログイン画面に遷移させる
+                val intent = Intent(applicationContext, LoginActivity::class.java)
+                startActivity(intent)
+            } else {
+                // Questionを渡して回答作成画面を起動する
+                val intent = Intent(applicationContext, AnswerSendActivity::class.java)
+                intent.putExtra("question", mQuestion)
+                startActivity(intent)
+            }
+        }
+
+        val dataBaseReference = FirebaseDatabase.getInstance().reference
+        mAnswerRef =
+            dataBaseReference.child(ContentsPATH).child(mQuestion.genre.toString()).child(mQuestion.questionUid)
+                .child(AnswersPATH)
+        mAnswerRef.addChildEventListener(mEventListener)
+
+
+    }
+
+    /*override fun onClick(v: View) {
+        if (v === textViewLike) {
+            if (likestar == false)
+                textViewLike.text = "⭐"
+                likestar = true
+                println("-----------"+likestar)
+            }else if(likestar == true){
+                textViewLike.text = "☆"
+                likestar = false
+            println("-----------"+likestar)
         }
     }
+    */
+}
 
