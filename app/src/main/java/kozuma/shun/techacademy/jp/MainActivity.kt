@@ -160,6 +160,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             intent.putExtra("question", mQuestionArrayList[position])
             startActivity(intent)
         }
+
+
     }
 
     override fun onResume() {
@@ -167,10 +169,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         val navigationView = findViewById<NavigationView>(R.id.nav_view)
 
         // 1:趣味を既定の選択とする
-        if(mGenre == 1) {
+        if(mGenre == 1 ) {
             onNavigationItemSelected(navigationView.menu.getItem(1))
         }
-
         // mToolbar.title = "お気に入り"
 
         val user = FirebaseAuth.getInstance().currentUser
@@ -181,12 +182,12 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         } else {
             navigationView.menu.findItem(R.id.nav_like).isVisible = true
+
             //mToolbar.title = "お気に入り"
             //mGenre = 0
             //navigationView.menu.add("お気に入りです")
         }
     }
-
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -211,6 +212,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         val id = item.itemId
 
+
         if (id == R.id.nav_hobby) {
             mToolbar.title = "趣味"
             mGenre = 1
@@ -224,7 +226,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             mToolbar.title = "コンピューター"
             mGenre = 4
         } else if (id == R.id.nav_like){
-            mToolbar.title = "お気に入り"
             val intent = Intent(applicationContext, FavoriteList::class.java)
             startActivity(intent)
         }

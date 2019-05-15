@@ -20,7 +20,7 @@ import kotlin.collections.HashMap
 
 
 
-class QuestionDetailActivity : AppCompatActivity() {
+class QuestionDetailActivity : AppCompatActivity(), View.OnClickListener {
 
     private lateinit var mQuestion: Question
     private lateinit var mAdapter: QuestionDetailListAdapter
@@ -28,12 +28,15 @@ class QuestionDetailActivity : AppCompatActivity() {
     private lateinit var mFavoriteRef: DatabaseReference
 
     //お気に入り判断
-    private var likestar: Boolean = false
+    private var likestar: Boolean? = null
     //お気に入りデータ
     private lateinit var mDataBaseReference: DatabaseReference
 
     private val mEventListener = object : ChildEventListener {
         override fun onChildAdded(dataSnapshot: DataSnapshot, s: String?) {
+
+
+
             val map = dataSnapshot.value as Map<String, String>
 
             val answerUid = dataSnapshot.key ?: ""
@@ -71,68 +74,36 @@ class QuestionDetailActivity : AppCompatActivity() {
         }
     }
 
+    private val post = object : ValueEventListener{
+        override fun onCancelled(p0: DatabaseError) {
+            TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        }
+
+        override fun onDataChange(dataSnapshot: DataSnapshot) {
+            // ログイン済みのユーザーを取得する
+            val user = FirebaseAuth.getInstance().currentUser!!.uid
+
+            val key = dataSnapshot.child(FavoritesPATH).child(user).child(mQuestion.questionUid).value
+            println("key  "+key + " mQuestion.questionUid" + mQuestion.questionUid  )
+
+            if(key != null){
+                textViewLike.text = "⭐"
+                likestar = true
+            }else{
+                textViewLike.text = "☆"
+                likestar = false
+            }
+
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_question_detail)
 
         mDataBaseReference = FirebaseDatabase.getInstance().reference
 
-
-        //お気に入りのID取得
-        //val dataBaseReference = FirebaseDatabase.getInstance().reference
-        val database = FirebaseDatabase.getInstance().reference
-
-        database.addValueEventListener(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                //var title = snapshot
-                var key = snapshot.child(FavoritesPATH).child(mQuestion.uid).child(mQuestion.genre.toString()).child("question_id").getValue().toString()
-
-                if(key.equals(mQuestion.questionUid)){
-                    textViewLike.text = "⭐"
-                }else{
-                    textViewLike.text = "☆"
-                }
-
-
-            }
-
-            override fun onCancelled(error: DatabaseError) {
-                //エラー処理
-            }
-        })
-
-
-        //お気に入りボタン
-        textViewLike.setOnClickListener{
-            if (likestar == false){
-                textViewLike.text = "⭐"
-                likestar = true
-                println("-----------"+likestar)
-
-                val favoriteRef = mDataBaseReference.child(FavoritesPATH).child(mQuestion.uid).child(mQuestion.genre.toString()).child("question_id").push().setValue(mQuestion.questionUid)
-
-                //val data = HashMap<String, String>()
-
-                //data["question_id"] = mQuestion.questionUid
-
-                //favoriteRef.setValue(data)
-
-                //favoriteRef.updateChildren(data as Map<String, Any>)
-
-            }else if(likestar == true){
-                textViewLike.text = "☆"
-                likestar = false
-                println("-----------"+likestar)
-
-                val favoriteRef = mDataBaseReference.child(FavoritesPATH).child(mQuestion.uid).child(mQuestion.genre.toString())
-
-                favoriteRef.removeValue()
-            }
-        }
-
-
-
-
+        mFavoriteRef = FirebaseDatabase.getInstance().reference
 
 
         // 渡ってきたQuestionのオブジェクトを保持する
@@ -145,6 +116,7 @@ class QuestionDetailActivity : AppCompatActivity() {
         mAdapter = QuestionDetailListAdapter(this, mQuestion)
         listView.adapter = mAdapter
         mAdapter.notifyDataSetChanged()
+
 
         fab.setOnClickListener {
             // ログイン済みのユーザーを取得する
@@ -169,20 +141,48 @@ class QuestionDetailActivity : AppCompatActivity() {
         mAnswerRef.addChildEventListener(mEventListener)
 
 
+        //お気に入りのID取得
+        mFavoriteRef.addValueEventListener(post)
+
+
+        textViewLike.setOnClickListener(this)
+
     }
 
-    /*override fun onClick(v: View) {
+
+    override fun onClick(v: View) {
+        val user = FirebaseAuth.getInstance().currentUser!!.uid
+
         if (v === textViewLike) {
-            if (likestar == false)
+            println("クリック" + likestar)
+            if (likestar == false){
                 textViewLike.text = "⭐"
                 likestar = true
                 println("-----------"+likestar)
+
+                val favoriteRef = mDataBaseReference.child(FavoritesPATH).child(user).child(mQuestion.questionUid)
+                val data = HashMap<String, String>()
+
+                data["genre"] = mQuestion.genre.toString()
+                favoriteRef.setValue(data)
+
             }else if(likestar == true){
+
                 textViewLike.text = "☆"
                 likestar = false
-            println("-----------"+likestar)
+                println("-----------"+likestar)
+
+                val favoriteRef = mDataBaseReference.child(FavoritesPATH).child(user).child(mQuestion.questionUid)
+
+                //println(favoriteRef)
+                favoriteRef.removeValue()
+
+            }
         }
     }
-    */
+
+
 }
+
+
 
